@@ -1,0 +1,14 @@
+plugins {
+    id 'java'
+}
+
+group 'pl.edu.agh.iwium'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile fileTree('/libs/robocode.jar')
+}
