@@ -8,6 +8,14 @@ Projekt z Robocode na Inżynierię Wiedzy i Uczenie Maszynowe.
 
 Od tej pory `Ctrl`+`Q`, gdy karetka jest na wywołaniu API *Robocode'a*, powinno pokazywać dokumentację.
 
+## Budowanie robotów / import do Robocode
+
+1. Uruchom task gradle'owy `build`. 
+2. W *Robocode* przejdź do `Options` -> `Preferences` -> `Development Options` i wybierz `Add`. Wskaż ścieżkę `{to repozytorium}/build/classes/java/main` i zamknij okno ustawień.
+3. W *Robocode* wybierz `Battle` -> `New` i odświerz listę botów (`Ctrl`+`R`). Możesz już wystawić do walki nowe boty.
+
+Przy kolejnych zmianach lub nowych botach wystarczy powtórzyć kroki 1. i 3. 
+
 ## Istotne strony internetowe
 
 * [Strona główna](https://robocode.sourceforge.io/) (linki poniżej to wybór najciekawszych podstron)
