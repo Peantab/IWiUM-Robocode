@@ -23,6 +23,7 @@ public class PtFirstRobot extends Robot {
         setRadarColor(Color.magenta);
         height = getBattleFieldHeight();
         width = getBattleFieldWidth();
+        out.println("Size:" + width + ":" + height);
 
         double topOfCentralRectangle = height/2 + 0.1 * height;
         double bottomOfCentralRectangle = height/2 - 0.1 * height;
