@@ -1,10 +1,9 @@
 package iwium;
 
-import robocode.AdvancedRobot;
-import robocode.HitByBulletEvent;
-import robocode.ScannedRobotEvent;
+import robocode.*;
 
 import java.awt.*;
+import java.io.*;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -17,15 +16,29 @@ public class QLearningRobot extends AdvancedRobot {
     private boolean onHitByBulletTriggered = false;
     private double rawEnemyDistance = 0;
 
+    private final static String filename = "iwiumKnowledge.ser";
     private final Random random = new Random();
-    private final static Map<Environment, Map<Action, Double>> knowledge = new HashMap<>();
+    private static Map<Environment, Map<Action, Double>> knowledge = null;
 
 //    TODO:
-//     * implementacja pozostałych akcji
-//     * serializacja wiedzy i kontynuacja od zserializowanego stanu
-//     * dostosowanie stałych
-//     * optymailizacje, które stosowaliśmy na zajęciach
+//     * implementacja pozostałych akcji - AB
+//     * serializacja wiedzy i kontynuacja od zserializowanego stanu - PT (DONE)
+//     * dostosowanie stałych - AB
+//     * punkty za dożycie do k-tej tury - AB
+//     * optymalizacje, które stosowaliśmy na zajęciach - PT
 //     * wyuczenie modelu
+
+    private Map<Environment, Map<Action, Double>> initKnowledge() {
+        Map<Environment, Map<Action, Double>> knowledge;
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(getDataFile(filename)))){
+            knowledge = (Map<Environment, Map<Action, Double>>) in.readObject();
+            System.out.println("Wczytałem stan wiedzy z pliku.");
+        } catch (IOException | ClassNotFoundException e) {
+            knowledge = new HashMap<>();
+            System.out.println("Stworzyłem nowy stan wiedzy.");
+        }
+        return knowledge;
+    }
 
     @Override
     public void run() {
@@ -33,15 +46,19 @@ public class QLearningRobot extends AdvancedRobot {
         setGunColor(Color.cyan);
         setRadarColor(Color.blue);
 
+        if(knowledge == null){
+            knowledge = initKnowledge();
+        }
+
         Environment environment = prepareEnvironment();
-        Environment newEnvironment = null;
+        Environment newEnvironment;
         double energyOnStart = getEnergy();
         double energyOnEnd;
         while (true){
             Action action = pickAction(environment);
             action.enqueue(this);
 
-            execute(); // to NIE jest tak na prawde blokujące!
+            execute(); // to NIE jest tak na prawdę blokujące!
             while (getDistanceRemaining() > 0 && getTurnRemaining() > 0) { // obejście powyższego, ale nie da się tak na zaplanowane wystrzały!
                 execute();
             }
@@ -114,8 +131,8 @@ public class QLearningRobot extends AdvancedRobot {
         else {
             double a = Math.tan(90 - heading);
             double b = y - a * x;
-            double leftRight = 0;
-            double upDown = 0;
+            double leftRight;
+            double upDown;
 
             if (heading < 180){
                 double yIntercept = a * maxX + b;
@@ -136,7 +153,7 @@ public class QLearningRobot extends AdvancedRobot {
 
         Distance distanceToWall;
         if (distance < 40) distanceToWall = Distance.CLOSE;
-        else if (distance < 100) distanceToWall = Distance.MEDIUM;
+        else if (distance < 550) distanceToWall = Distance.MEDIUM;
         else distanceToWall = Distance.FAR;
 
         return distanceToWall;
@@ -195,7 +212,19 @@ public class QLearningRobot extends AdvancedRobot {
         }
     }
 
-    private static class Environment {
+    @Override
+    public void onDeath(DeathEvent event) {
+        super.onDeath(event);
+        try (ObjectOutputStream objectOut = new ObjectOutputStream(new RobocodeFileOutputStream(getDataFile(filename)))) {
+            objectOut.writeObject(knowledge);
+            out.println("Zapisałem wiedzę");
+        } catch (IOException e) {
+            out.println("Błąd podczas zapisywania wiedzy.");
+            e.printStackTrace();
+        }
+    }
+
+    private static class Environment implements Serializable {
         private final EnergyStatus energyStatus;
         private final Distance distanceToWall;
         private final Distance distanceToEnemy;
@@ -236,7 +265,7 @@ public class QLearningRobot extends AdvancedRobot {
     }
 
     private enum EventHappened {
-        SCANNED_ROBOT_TRIGGERED, HIT_BY_BULLET_TRIGGERED, BOTH_TRIGGERED, NOTHING_HAPPENED;
+        SCANNED_ROBOT_TRIGGERED, HIT_BY_BULLET_TRIGGERED, BOTH_TRIGGERED, NOTHING_HAPPENED
     }
 
     private enum EnergyStatus {
