@@ -21,10 +21,10 @@ public class QLearningRobot extends AdvancedRobot {
     private static Map<Environment, Map<Action, Double>> knowledge = null;
 
 //    TODO:
-//     * implementacja pozostałych akcji - AB
+//     * implementacja pozostałych akcji - AB (DONE?)
 //     * serializacja wiedzy i kontynuacja od zserializowanego stanu - PT (DONE)
 //     * dostosowanie stałych - AB
-//     * punkty za dożycie do k-tej tury - AB
+//     * punkty za dożycie do k-tej tury - AB (DONE?)
 //     * optymalizacje, które stosowaliśmy na zajęciach - PT
 //     * wyuczenie modelu
 
@@ -54,6 +54,8 @@ public class QLearningRobot extends AdvancedRobot {
         Environment newEnvironment;
         double energyOnStart = getEnergy();
         double energyOnEnd;
+        int roundOnStart = getRoundNum();
+        int roundOnEnd;
         while (true){
             Action action = pickAction(environment);
             action.enqueue(this);
@@ -64,9 +66,11 @@ public class QLearningRobot extends AdvancedRobot {
             }
             newEnvironment = prepareEnvironment();
             energyOnEnd = getEnergy();
-            updateKnowledge(action, environment, newEnvironment, energyOnEnd - energyOnStart); // FIXME: fakt strzelenia jest karany, nagrodę otrzymamy dużo później...
+            roundOnEnd = getRoundNum();
+            updateKnowledge(action, environment, newEnvironment, energyOnEnd - energyOnStart + roundOnEnd - roundOnStart + 1); // FIXME: fakt strzelenia jest karany, nagrodę otrzymamy dużo później... chyba naprawione
             environment = newEnvironment;
             energyOnStart = energyOnEnd;
+            roundOnStart = roundOnEnd + 1;
         }
     }
 
@@ -278,10 +282,16 @@ public class QLearningRobot extends AdvancedRobot {
 
     private enum Action {
         GO_FORWARD_NEAR((AdvancedRobot a) -> a.setAhead(10)),
+        GO_FORWARD_FAR((AdvancedRobot a) -> a.setAhead(50)),
         GO_BACKWARD_NEAR((AdvancedRobot a) -> a.setAhead(-10)),
-        TURN_LEFT_LIGHT((AdvancedRobot a) -> a.setTurnLeft(10)),
-        TURN_RIGHT_LIGHT((AdvancedRobot a) -> a.setTurnRight(10)),
-        FIRE_LIGHT((AdvancedRobot a) -> a.setFire(0.5));
+        GO_BACKWARD_FAR((AdvancedRobot a) -> a.setAhead(-50)),
+        TURN_LEFT_LIGHT((AdvancedRobot a) -> a.setTurnLeft(15)),
+        TURN_LEFT_FIRMLY((AdvancedRobot a) -> a.setTurnLeft(60)),
+        TURN_RIGHT_LIGHT((AdvancedRobot a) -> a.setTurnRight(15)),
+        TURN_RIGHT_FIRMLY((AdvancedRobot a) -> a.setTurnRight(60)),
+        FIRE_LIGHT((AdvancedRobot a) -> {a.setFire(1); a.setAhead(5);}),
+        FIRE_MEDIUM((AdvancedRobot a) -> {a.setFire(3); a.setAhead(5);}),
+        FIRE_HARD((AdvancedRobot a) -> {a.setFire(5); a.setAhead(5);});
 
         Consumer<AdvancedRobot> action;
 
