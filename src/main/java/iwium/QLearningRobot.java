@@ -26,12 +26,10 @@ public class QLearningRobot extends AdvancedRobot {
     private static Map<Environment, Map<Action, Double>> knowledge = null;
 
 //    TODO:
-//     * implementacja pozostałych akcji - AB (DONE?)
-//     * serializacja wiedzy i kontynuacja od zserializowanego stanu - PT (DONE)
 //     * dostosowanie stałych - AB
-//     * punkty za dożycie do k-tej tury - AB (DONE?) - to chyba nie ma sensu -> już lepiej byłoby podnosić Q dla kombinacji wykonywanych wcześniej
-//     * optymalizacje, które stosowaliśmy na zajęciach - PT (DONE - nie chcemy SARSA?)
-//     * wyuczenie modelu (bez GUI, zautomatyzować, plik .battle może pomóc; róbmy bitwy jednorundowe, by uzyskać punktację)
+//     * punkty za dożycie do k-tej tury -> nowy pomysł: nagradzanie 25 najstarszych spośród 30 ostatnich decyzji wartością 0.1 (czyli każdy z tych ruchów może zyskać do 2.5 punkta)
+//     * Automatyzacja odpalania 1-rundowych bitew bez GUI ze zbieraniem punktacji naszego bota (być może plik .battle może pomóc) - AB
+//     * wyuczenie modelu
 //     * Analiza statystyczna wyników
 
     private void initKnowledge() {
@@ -294,9 +292,9 @@ public class QLearningRobot extends AdvancedRobot {
         TURN_LEFT_FIRMLY((AdvancedRobot a) -> a.setTurnLeft(60)),
         TURN_RIGHT_LIGHT((AdvancedRobot a) -> a.setTurnRight(15)),
         TURN_RIGHT_FIRMLY((AdvancedRobot a) -> a.setTurnRight(60)),
-        FIRE_LIGHT((AdvancedRobot a) -> {a.setFire(1); a.setAhead(5);}),
-        FIRE_MEDIUM((AdvancedRobot a) -> {a.setFire(3); a.setAhead(5);}),
-        FIRE_HARD((AdvancedRobot a) -> {a.setFire(5); a.setAhead(5);});
+        FIRE_LIGHT((AdvancedRobot a) -> {a.setFire(0.5); a.setAhead(5);}),
+        FIRE_MEDIUM((AdvancedRobot a) -> {a.setFire(1.5); a.setAhead(5);}),
+        FIRE_HARD((AdvancedRobot a) -> {a.setFire(3); a.setAhead(5);});
 
         Consumer<AdvancedRobot> action;
 
