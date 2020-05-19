@@ -7,10 +7,15 @@ import java.io.*;
 import java.util.*;
 import java.util.function.Consumer;
 
+import static java.lang.Double.max;
+
 public class QLearningRobot extends AdvancedRobot {
-    private final double epsilon = 0.7;
-    private final double learningRate = 0.4;
-    private final double discount = 0.4;
+    private static double epsilon = 0.7;
+    private static double learningRate = 0.4;
+    private static double discount = 0.4;
+
+    private static final double minimumEpsilon = 0.01;
+    private static final double minimumLR = 0.01;
 
     private boolean onScannedRobotTriggered = false;
     private boolean onHitByBulletTriggered = false;
@@ -25,19 +30,19 @@ public class QLearningRobot extends AdvancedRobot {
 //     * serializacja wiedzy i kontynuacja od zserializowanego stanu - PT (DONE)
 //     * dostosowanie stałych - AB
 //     * punkty za dożycie do k-tej tury - AB (DONE?)
-//     * optymalizacje, które stosowaliśmy na zajęciach - PT
+//     * optymalizacje, które stosowaliśmy na zajęciach - PT (DONE - nie chcemy SARSA?)
 //     * wyuczenie modelu
+//     * Analiza statystyczna wyników
 
-    private Map<Environment, Map<Action, Double>> initKnowledge() {
-        Map<Environment, Map<Action, Double>> knowledge;
+    private void initKnowledge() {
         try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(getDataFile(filename)))){
-            knowledge = (Map<Environment, Map<Action, Double>>) in.readObject();
-            System.out.println("Wczytałem stan wiedzy z pliku.");
+            ((SerializableState) in.readObject()).initializeState();
+            System.out.println("Wczytałem stan wiedzy i parametry z pliku.");
+            System.out.println("Wczytane parametry: epsilon=" + epsilon + ", LR=" + learningRate + ", discount=" + discount);
         } catch (IOException | ClassNotFoundException e) {
             knowledge = new HashMap<>();
             System.out.println("Stworzyłem nowy stan wiedzy.");
         }
-        return knowledge;
     }
 
     @Override
@@ -47,7 +52,7 @@ public class QLearningRobot extends AdvancedRobot {
         setRadarColor(Color.blue);
 
         if(knowledge == null){
-            knowledge = initKnowledge();
+            initKnowledge();
         }
 
         Environment environment = prepareEnvironment();
@@ -220,10 +225,10 @@ public class QLearningRobot extends AdvancedRobot {
     public void onDeath(DeathEvent event) {
         super.onDeath(event);
         try (ObjectOutputStream objectOut = new ObjectOutputStream(new RobocodeFileOutputStream(getDataFile(filename)))) {
-            objectOut.writeObject(knowledge);
-            out.println("Zapisałem wiedzę");
+            objectOut.writeObject(new SerializableState(knowledge, max(0.99 * epsilon, minimumEpsilon), max(0.99 * learningRate, minimumLR), discount));
+            out.println("Zapisałem stan");
         } catch (IOException e) {
-            out.println("Błąd podczas zapisywania wiedzy.");
+            out.println("Błąd podczas zapisywania stanu.");
             e.printStackTrace();
         }
     }
@@ -301,6 +306,27 @@ public class QLearningRobot extends AdvancedRobot {
 
         void enqueue(AdvancedRobot r) {
             action.accept(r);
+        }
+    }
+
+    private static class SerializableState implements Serializable {
+        private final Map<Environment, Map<Action, Double>> environment;
+        private final double epsilon;
+        private final double learningRate;
+        private final double discount;
+
+        public SerializableState(Map<Environment, Map<Action, Double>> environment, double epsilon, double learningRate, double discount) {
+            this.environment = environment;
+            this.epsilon = epsilon;
+            this.learningRate = learningRate;
+            this.discount = discount;
+        }
+
+        void initializeState() {
+            QLearningRobot.knowledge = environment;
+            QLearningRobot.epsilon = epsilon;
+            QLearningRobot.learningRate = learningRate;
+            QLearningRobot.discount = discount;
         }
     }
 }
