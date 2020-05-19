@@ -29,9 +29,9 @@ public class QLearningRobot extends AdvancedRobot {
 //     * implementacja pozostałych akcji - AB (DONE?)
 //     * serializacja wiedzy i kontynuacja od zserializowanego stanu - PT (DONE)
 //     * dostosowanie stałych - AB
-//     * punkty za dożycie do k-tej tury - AB (DONE?)
+//     * punkty za dożycie do k-tej tury - AB (DONE?) - to chyba nie ma sensu -> już lepiej byłoby podnosić Q dla kombinacji wykonywanych wcześniej
 //     * optymalizacje, które stosowaliśmy na zajęciach - PT (DONE - nie chcemy SARSA?)
-//     * wyuczenie modelu
+//     * wyuczenie modelu (bez GUI, zautomatyzować, plik .battle może pomóc; róbmy bitwy jednorundowe, by uzyskać punktację)
 //     * Analiza statystyczna wyników
 
     private void initKnowledge() {
