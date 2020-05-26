@@ -42,14 +42,16 @@ public class AniaRobot extends Robot {
 	public void onScannedRobot(ScannedRobotEvent e){
 		double distance = e.getDistance();
 		if(distance > 800)
-			fire(5);
-		else if(distance > 600 && distance <= 800)
-			fire(4);
-		else if(distance > 400 && distance <= 600)
 			fire(3);
-		else if(distance > 200 && distance <= 400)
+		else if(distance > 600 && distance <= 800)
+			fire(2.5);
+		else if(distance > 400 && distance <= 600)
 			fire(2);
-		else if(distance < 200)
+		else if(distance > 200 && distance <= 400)
+			fire(1.5);
+		else if(distance > 100 && distance <= 200)
 			fire(1);
+		else if(distance < 100)
+			fire(0.5);
 	}
 }

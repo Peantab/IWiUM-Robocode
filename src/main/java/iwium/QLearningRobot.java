@@ -1,6 +1,7 @@
 package iwium;
 
 import robocode.*;
+import robocode.Robot;
 
 import java.awt.*;
 import java.io.*;
@@ -24,6 +25,7 @@ public class QLearningRobot extends AdvancedRobot {
     private final static String filename = "iwiumKnowledge.ser";
     private final Random random = new Random();
     private static Map<Environment, Map<Action, Double>> knowledge = null;
+    private static ArrayList<Map.Entry<Action, Environment>> actionsBuffer= new ArrayList<>();
 
 //    TODO:
 //     * dostosowanie stałych - AB
@@ -57,8 +59,6 @@ public class QLearningRobot extends AdvancedRobot {
         Environment newEnvironment;
         double energyOnStart = getEnergy();
         double energyOnEnd;
-        int roundOnStart = getRoundNum();
-        int roundOnEnd;
         while (true){
             Action action = pickAction(environment);
             action.enqueue(this);
@@ -69,11 +69,9 @@ public class QLearningRobot extends AdvancedRobot {
             }
             newEnvironment = prepareEnvironment();
             energyOnEnd = getEnergy();
-            roundOnEnd = getRoundNum();
-            updateKnowledge(action, environment, newEnvironment, energyOnEnd - energyOnStart + roundOnEnd - roundOnStart + 1); // FIXME: fakt strzelenia jest karany, nagrodę otrzymamy dużo później... chyba naprawione
+            updateKnowledge(action, environment, newEnvironment, energyOnEnd - energyOnStart);
             environment = newEnvironment;
             energyOnStart = energyOnEnd;
-            roundOnStart = roundOnEnd + 1;
         }
     }
 
@@ -208,6 +206,22 @@ public class QLearningRobot extends AdvancedRobot {
 
         knowledge.computeIfAbsent(observation, environment -> new HashMap<>()).put(action, newValue);
         normalize(newValue);
+
+        manageActionsBuffer(action, observation);
+    }
+
+    private void manageActionsBuffer(Action action, Environment observation) {
+        if(actionsBuffer.size() >= 35) {
+            for(int i = 0; i < 25; i++) {
+                double oldValue = knowledge.get(observation).get(action);
+                double newValue = oldValue + 0.1;
+                knowledge.computeIfAbsent(observation, environment -> new HashMap<>()).put(action, newValue);
+                normalize(newValue);
+            }
+            actionsBuffer.remove(0);
+        }
+        Map.Entry<Action, Environment> newEntry = new AbstractMap.SimpleEntry<>(action,observation);
+        actionsBuffer.add(newEntry);
     }
 
     private void normalize (double newValue) {
@@ -284,6 +298,7 @@ public class QLearningRobot extends AdvancedRobot {
     }
 
     private enum Action {
+        DO_NOTHING(Robot::doNothing),
         GO_FORWARD_NEAR((AdvancedRobot a) -> a.setAhead(10)),
         GO_FORWARD_FAR((AdvancedRobot a) -> a.setAhead(50)),
         GO_BACKWARD_NEAR((AdvancedRobot a) -> a.setAhead(-10)),
@@ -293,8 +308,8 @@ public class QLearningRobot extends AdvancedRobot {
         TURN_RIGHT_LIGHT((AdvancedRobot a) -> a.setTurnRight(15)),
         TURN_RIGHT_FIRMLY((AdvancedRobot a) -> a.setTurnRight(60)),
         FIRE_LIGHT((AdvancedRobot a) -> {a.setFire(0.5); a.setAhead(5);}),
-        FIRE_MEDIUM((AdvancedRobot a) -> {a.setFire(1.5); a.setAhead(5);}),
-        FIRE_HARD((AdvancedRobot a) -> {a.setFire(3); a.setAhead(5);});
+        FIRE_MEDIUM((AdvancedRobot a) -> {a.setFire(1.5); a.setAhead(7);}),
+        FIRE_HARD((AdvancedRobot a) -> {a.setFire(3); a.setAhead(10);});
 
         Consumer<AdvancedRobot> action;
 
