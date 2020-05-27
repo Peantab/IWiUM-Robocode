@@ -2,6 +2,7 @@ package iwium;
 
 import robocode.*;
 import robocode.Robot;
+import robocode.control.events.*;
 
 import java.awt.*;
 import java.io.*;
@@ -15,7 +16,7 @@ public class QLearningRobot extends AdvancedRobot {
     private static double learningRate = 0.4;
     private static double discount = 0.4;
 
-    private static final double minimumEpsilon = 0.01;
+    private static final double minimumEpsilon = 0.01; // 0.05?
     private static final double minimumLR = 0.01;
 
     private boolean onScannedRobotTriggered = false;
@@ -25,10 +26,9 @@ public class QLearningRobot extends AdvancedRobot {
     private final static String filename = "iwiumKnowledge.ser";
     private final Random random = new Random();
     private static Map<Environment, Map<Action, Double>> knowledge = null;
-    private static ArrayList<Map.Entry<Action, Environment>> actionsBuffer= new ArrayList<>();
+    private final static ArrayList<HistoryEvent> history= new ArrayList<>();
 
 //    TODO:
-//     * dostosowanie stałych - AB
 //     * punkty za dożycie do k-tej tury -> nowy pomysł: nagradzanie 25 najstarszych spośród 30 ostatnich decyzji wartością 0.1 (czyli każdy z tych ruchów może zyskać do 2.5 punkta)
 //     * Automatyzacja odpalania 1-rundowych bitew bez GUI ze zbieraniem punktacji naszego bota (być może plik .battle może pomóc) - AB
 //     * wyuczenie modelu
@@ -207,21 +207,23 @@ public class QLearningRobot extends AdvancedRobot {
         knowledge.computeIfAbsent(observation, environment -> new HashMap<>()).put(action, newValue);
         normalize(newValue);
 
-        manageActionsBuffer(action, observation);
+        updateHistory(action, observation);
     }
 
-    private void manageActionsBuffer(Action action, Environment observation) {
-        if(actionsBuffer.size() >= 35) {
+    private void updateHistory(Action newAction, Environment newObservation) {
+        HistoryEvent newHistoryEvent = new HistoryEvent(newAction, newObservation);
+        history.add(newHistoryEvent);
+        if(history.size() >= 35) {
             for(int i = 0; i < 25; i++) {
+                Action action = history.get(i).getAction();
+                Environment observation = history.get(i).getObservation();
                 double oldValue = knowledge.get(observation).get(action);
                 double newValue = oldValue + 0.1;
                 knowledge.computeIfAbsent(observation, environment -> new HashMap<>()).put(action, newValue);
                 normalize(newValue);
             }
-            actionsBuffer.remove(0);
+            history.remove(0);
         }
-        Map.Entry<Action, Environment> newEntry = new AbstractMap.SimpleEntry<>(action,observation);
-        actionsBuffer.add(newEntry);
     }
 
     private void normalize (double newValue) {
@@ -298,18 +300,13 @@ public class QLearningRobot extends AdvancedRobot {
     }
 
     private enum Action {
-        DO_NOTHING(Robot::doNothing),
-        GO_FORWARD_NEAR((AdvancedRobot a) -> a.setAhead(10)),
-        GO_FORWARD_FAR((AdvancedRobot a) -> a.setAhead(50)),
-        GO_BACKWARD_NEAR((AdvancedRobot a) -> a.setAhead(-10)),
-        GO_BACKWARD_FAR((AdvancedRobot a) -> a.setAhead(-50)),
-        TURN_LEFT_LIGHT((AdvancedRobot a) -> a.setTurnLeft(15)),
-        TURN_LEFT_FIRMLY((AdvancedRobot a) -> a.setTurnLeft(60)),
-        TURN_RIGHT_LIGHT((AdvancedRobot a) -> a.setTurnRight(15)),
-        TURN_RIGHT_FIRMLY((AdvancedRobot a) -> a.setTurnRight(60)),
-        FIRE_LIGHT((AdvancedRobot a) -> {a.setFire(0.5); a.setAhead(5);}),
-        FIRE_MEDIUM((AdvancedRobot a) -> {a.setFire(1.5); a.setAhead(7);}),
-        FIRE_HARD((AdvancedRobot a) -> {a.setFire(3); a.setAhead(10);});
+        DO_NOTHING((AdvancedRobot a) -> {}),
+        GO_FORWARD((AdvancedRobot a) -> a.setAhead(25)),
+        GO_BACKWARD((AdvancedRobot a) -> a.setAhead(25)),
+        TURN_LEFT((AdvancedRobot a) -> a.setTurnLeft(30)),
+        TURN_RIGHT((AdvancedRobot a) -> a.setTurnRight(30)),
+        FIRE_LIGHT((AdvancedRobot a) -> {a.setFire(0.5); a.setAhead(8);}),
+        FIRE_HARD((AdvancedRobot a) -> {a.setFire(2.5); a.setAhead(10);});
 
         Consumer<AdvancedRobot> action;
 
@@ -320,6 +317,26 @@ public class QLearningRobot extends AdvancedRobot {
         void enqueue(AdvancedRobot r) {
             action.accept(r);
         }
+    }
+
+    private static class HistoryEvent {
+
+        private final Action action;
+        private final Environment observation;
+
+        public HistoryEvent(Action action, Environment observation) {
+            this.action = action;
+            this.observation = observation;
+        }
+
+        public Action getAction() {
+            return action;
+        }
+
+        public Environment getObservation() {
+            return observation;
+        }
+
     }
 
     private static class SerializableState implements Serializable {
