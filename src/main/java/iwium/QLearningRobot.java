@@ -1,8 +1,6 @@
 package iwium;
 
 import robocode.*;
-import robocode.Robot;
-import robocode.control.events.*;
 
 import java.awt.*;
 import java.io.*;
@@ -29,7 +27,6 @@ public class QLearningRobot extends AdvancedRobot {
     private final static ArrayList<HistoryEvent> history= new ArrayList<>();
 
 //    TODO:
-//     * punkty za dożycie do k-tej tury -> nowy pomysł: nagradzanie 25 najstarszych spośród 30 ostatnich decyzji wartością 0.1 (czyli każdy z tych ruchów może zyskać do 2.5 punkta)
 //     * Automatyzacja odpalania 1-rundowych bitew bez GUI ze zbieraniem punktacji naszego bota (być może plik .battle może pomóc) - AB
 //     * wyuczenie modelu
 //     * Analiza statystyczna wyników
@@ -205,32 +202,29 @@ public class QLearningRobot extends AdvancedRobot {
         double newValue = (1 - learningRate) * oldValue + learningRate * (reward + discount * maxFutureReward);
 
         knowledge.computeIfAbsent(observation, environment -> new HashMap<>()).put(action, newValue);
-        normalize(newValue);
-
-        updateHistory(action, observation);
+        updateHistory(observation, action);
+        normalize();
     }
 
-    private void updateHistory(Action newAction, Environment newObservation) {
-        HistoryEvent newHistoryEvent = new HistoryEvent(newAction, newObservation);
+    private void updateHistory(Environment newObservation, Action newAction) {
+        HistoryEvent newHistoryEvent = new HistoryEvent(newObservation, newAction);
         history.add(newHistoryEvent);
         if(history.size() >= 35) {
-            for(int i = 0; i < 25; i++) {
-                Action action = history.get(i).getAction();
-                Environment observation = history.get(i).getObservation();
-                double oldValue = knowledge.get(observation).get(action);
-                double newValue = oldValue + 0.1;
-                knowledge.computeIfAbsent(observation, environment -> new HashMap<>()).put(action, newValue);
-                normalize(newValue);
+            for (HistoryEvent event: history.subList(0, 25)) {
+                Environment observation = event.getObservation();
+                Action action = event.getAction();
+                knowledge.get(observation).compute(action, (a, v) -> v += 0.1);
             }
             history.remove(0);
         }
     }
 
-    private void normalize (double newValue) {
-        if (newValue > 1 || newValue < -1) {
+    private void normalize() {
+        double max = knowledge.entrySet().stream().flatMap((e) -> e.getValue().values().stream()).map(Math::abs).max(Comparator.naturalOrder()).orElse(1.0);
+        if (max > 1) {
             for (Map.Entry<Environment, Map<Action, Double>> knowledgeAsEntries: knowledge.entrySet()) {
                 Map<Action, Double> rewardsForActions = knowledgeAsEntries.getValue();
-                rewardsForActions.replaceAll((a, v) -> rewardsForActions.get(a) / newValue);
+                rewardsForActions.replaceAll((a, v) -> rewardsForActions.get(a) / max);
             }
         }
     }
@@ -324,19 +318,18 @@ public class QLearningRobot extends AdvancedRobot {
         private final Action action;
         private final Environment observation;
 
-        public HistoryEvent(Action action, Environment observation) {
-            this.action = action;
+        public HistoryEvent(Environment observation, Action action) {
             this.observation = observation;
-        }
-
-        public Action getAction() {
-            return action;
+            this.action = action;
         }
 
         public Environment getObservation() {
             return observation;
         }
 
+        public Action getAction() {
+            return action;
+        }
     }
 
     private static class SerializableState implements Serializable {
