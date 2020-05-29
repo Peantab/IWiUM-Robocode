@@ -22,36 +22,34 @@ public class AniaRobot extends Robot {
 			ahead(100);
 			turnGunRight(360);
 			ahead(100);
-			turnGunRight(360);
 			turnRight(90);
 		}
 	}
 
-	public void onHitWall(HitWallEvent e){
-		back(200);
+	public void onHitWall(HitWallEvent event){
+		if (event.getBearing() > -90 && event.getBearing() <= 90) {
+			back(150);
+		} else {
+			ahead(150);
+		}
 	}
 
 	public void onHitRobot(HitRobotEvent event) {
-		if (event.getBearing() > -90 && event.getBearing() <= 90) {
-			back(100);
-		} else {
-			ahead(100);
-		}
+		turnRight(event.getBearing());
+		fire(3);
+		ahead(20);
 	}
 
 	public void onScannedRobot(ScannedRobotEvent e){
 		double distance = e.getDistance();
-		if(distance > 800)
+		if(distance > 800){
 			fire(3);
-		else if(distance > 600 && distance <= 800)
-			fire(2.5);
-		else if(distance > 400 && distance <= 600)
+		}
+		else if(distance > 400 && distance <= 800) {
 			fire(2);
-		else if(distance > 200 && distance <= 400)
-			fire(1.5);
-		else if(distance > 100 && distance <= 200)
+		}
+		else if(distance <= 400) {
 			fire(1);
-		else if(distance < 100)
-			fire(0.5);
+		}
 	}
 }
