@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 
 import static java.lang.Double.max;
 
-public class QLearningRobot extends AdvancedRobot {
+public class QLearningRobot2 extends AdvancedRobot {
     private static double epsilon = 0.7;
     private static double learningRate = 0.4;
     private static double discount = 0.4;
@@ -25,10 +25,6 @@ public class QLearningRobot extends AdvancedRobot {
     private final Random random = new Random();
     private static Map<Environment, Map<Action, Double>> knowledge = null;
     private final ArrayList<HistoryEvent> history= new ArrayList<>();
-
-//    TODO:
-//     * wyuczenie modelu
-//     * Analiza statystyczna wyników
 
     private void initKnowledge() {
         try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(getDataFile(filename)))){
@@ -208,13 +204,13 @@ public class QLearningRobot extends AdvancedRobot {
     private void updateHistory(Environment newObservation, Action newAction) {
         HistoryEvent newHistoryEvent = new HistoryEvent(newObservation, newAction);
         history.add(newHistoryEvent);
-        if(history.size() >= 35) {
-            for (HistoryEvent event: history.subList(0, 25)) {
+        int threshold = 1000;
+        if(history.size() >= threshold) {
+            for (HistoryEvent event: history.subList(0, history.size() - threshold)) {
                 Environment observation = event.getObservation();
                 Action action = event.getAction();
-                knowledge.get(observation).compute(action, (a, v) -> v += 0.1);
+                knowledge.get(observation).compute(action, (a, v) -> v += 0.02);
             }
-            history.remove(0);
         }
     }
 
@@ -345,10 +341,10 @@ public class QLearningRobot extends AdvancedRobot {
         }
 
         void initializeState() {
-            QLearningRobot.knowledge = environment;
-            QLearningRobot.epsilon = epsilon;
-            QLearningRobot.learningRate = learningRate;
-            QLearningRobot.discount = discount;
+            QLearningRobot2.knowledge = environment;
+            QLearningRobot2.epsilon = epsilon;
+            QLearningRobot2.learningRate = learningRate;
+            QLearningRobot2.discount = discount;
         }
     }
 }

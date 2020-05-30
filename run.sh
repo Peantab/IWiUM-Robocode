@@ -6,9 +6,9 @@ SCRIPTPATH=$(dirname "$SCRIPT")
 
 cd 'C:\robocode'
 
-for i in {1..20}
+for i in {1..99999}
 do
-  ./robocode.bat -nodisplay -battle $SCRIPTPATH/oneTurn.battle -results $SCRIPTPATH/tmp_result.txt
+  ./robocode.bat -nodisplay -battle $SCRIPTPATH/configuration.battle -results $SCRIPTPATH/tmp_result.txt
   cat $SCRIPTPATH/tmp_result.txt >> $SCRIPTPATH/result.txt
 done
 
