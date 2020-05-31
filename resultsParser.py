@@ -1,6 +1,7 @@
 import re
 import time
 import matplotlib.pyplot as plt
+import statistics
 import sys
 
 BOT = ''
@@ -16,6 +17,7 @@ def main():
     fig.tight_layout()
 
     ax.plot(qlearning_results.percentage, linewidth=0.6, label='QLearning', color='tab:blue')
+    ax.plot(qlearning_results.running_avg, linewidth=0.6, label='Running average', color='tab:orange')
     # plt.legend()
     # plt.show()
     plt.savefig('QLearningResults' + BOT, dpi=300)
@@ -28,6 +30,12 @@ class ExperimentResults:
 
     def __init__(self):
         self.percentage = []
+        self.running_avg = []
+
+    def _running(self):
+        for i in range(1, len(self.percentage)+1):
+            beginning = max(0, i - 100)
+            self.running_avg.append(statistics.mean(self.percentage[beginning:i]))
 
     @staticmethod
     def from_log(file: str):
@@ -50,6 +58,7 @@ class ExperimentResults:
                         q_result = 0
                         sum_of_scores = 0
                         count_to_three = 0
+        results._running()
         return results
 
 
